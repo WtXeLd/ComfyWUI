@@ -1,0 +1,43 @@
+/* CSS Variables - Black and White Geek Style */
+:root {
+  /* Colors */
+  --color-bg: #000000;
+  --color-bg-secondary: #0a0a0a;
+  --color-bg-tertiary: #141414;
+  --color-border: #333333;
+  --color-text: #ffffff;
+  --color-text-secondary: #999999;
+  --color-text-tertiary: #666666;
+  --color-accent: #00ff00;
+  --color-error: #ff0000;
+  --color-success: #00ff00;
+  --color-warning: #ffff00;
+
+  /* Spacing */
+  --border-radius: 4px;
+  --border-width: 1px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* Typography */
+  --font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-xxl: 24px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+
+  /* Z-index */
+  --z-modal: 1000;
+  --z-overlay: 999;
+  --z-dropdown: 100;
+}

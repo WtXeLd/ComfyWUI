@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Data directories
+backend/data/workflows/*.json
+backend/data/images/
+backend/data/metadata/
+backend/data/api_keys.json
+
+# Keep .gitkeep files
+!backend/data/workflows/.gitkeep
+!backend/data/images/.gitkeep
+!backend/data/metadata/.gitkeep
+
+# Environment variables
+.env
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js / React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Frontend build
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Logs
+*.log
+logs/
+
+# Docs
+CLAUDE.md
+.claude/
+
+# Nginx
+nginx.conf
+nginx.pid
+temp/
