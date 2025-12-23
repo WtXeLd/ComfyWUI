@@ -15,14 +15,14 @@ export default defineConfig({
     port: 5174,
     strictPort: false,
     // Proxy API requests to backend during development
-    // proxy: {
-    //   '/api': {
-    //     target: 'http://localhost:8290',
-    //     changeOrigin: true,
-    //     secure: false,
-    //     ws: true, // Enable WebSocket proxying
-    //   },
-    // },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8290',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // Enable WebSocket proxying
+      },
+    },
   },
   preview: {
     host: '0.0.0.0',
