@@ -1,13 +1,14 @@
 """
 FastAPI main application
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 
 from app.config import settings
-from app.api import workflows, generation, images, auth, google_ai
+from app.api import workflows, generation, images, auth, google_ai, cloud
 from app.dependencies import api_key_manager
 
 # Configure logging
@@ -17,27 +18,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
-app = FastAPI(
-    title="ComfyUI Web Application API",
-    description="API for managing ComfyUI workflows and generating images",
-    version="1.0.0"
-)
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# Initialize application
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
+    # Startup
     logger.info("Starting ComfyUI Web Application...")
 
     # Initialize directories
@@ -59,11 +44,28 @@ async def startup_event():
     logger.info(f"Data path: {settings.data_path}")
     logger.info("Application started successfully!")
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
+    # Shutdown
     logger.info("Shutting down ComfyUI Web Application...")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="ComfyUI Web Application API",
+    description="API for managing ComfyUI workflows and generating images",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Include API routers
@@ -72,6 +74,7 @@ app.include_router(generation.router, prefix="/api")
 app.include_router(images.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(google_ai.router, prefix="/api")
+app.include_router(cloud.router, prefix="/api")
 
 
 # Root endpoint

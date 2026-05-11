@@ -15,12 +15,16 @@ class Settings(BaseSettings):
     # Google AI Configuration
     google_api_key: Optional[str] = None
 
+    # Runware Configuration
+    runware_api_key: Optional[str] = None
+
     # Data Storage
     data_path: Path = Path("./data")
     workflows_path: Path = Path("./data/workflows")
     images_path: Path = Path("./data/images")
     metadata_path: Path = Path("./data/metadata")
     api_keys_file: Path = Path("./data/api_keys.json")
+    cloud_models_file: Path = Path("./data/cloud_models.json")
 
     # Server Configuration
     host: str = "0.0.0.0"

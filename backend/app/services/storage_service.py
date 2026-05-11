@@ -200,7 +200,8 @@ class StorageService:
                 await f.write(image_data)
 
             logger.info(f"Saved image: {file_path} (owner: {owner_id or 'legacy'})")
-            return str(file_path)
+            # Use POSIX format (forward slashes) for cross-platform compatibility (Windows/WSL)
+            return file_path.as_posix()
 
         except Exception as e:
             logger.error(f"Failed to save image {filename}: {str(e)}")

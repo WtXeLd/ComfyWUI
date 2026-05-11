@@ -1,0 +1,85 @@
+{
+  "models": [
+    {
+      "id": "google-gemini-2.5-flash",
+      "name": "Nano banana",
+      "provider": "google_ai",
+      "model_id": "gemini-2.5-flash-image",
+      "supports_resolution_tiers": false,
+      "supports_reference_image": true,
+      "aspect_ratios": [
+        "1:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "21:9"
+      ],
+      "resolution_tiers": []
+    },
+    {
+      "id": "google-gemini-3-pro",
+      "name": "Nano banana Pro",
+      "provider": "google_ai",
+      "model_id": "gemini-3-pro-image-preview",
+      "supports_resolution_tiers": true,
+      "supports_reference_image": true,
+      "aspect_ratios": [
+        "1:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "21:9"
+      ],
+      "resolution_tiers": [
+        "1K",
+        "2K",
+        "4K"
+      ]
+    },
+    {
+      "id": "runware-seedream-4.5",
+      "name": "Seedream 4.5",
+      "provider": "runware",
+      "model_id": "bytedance:seedream@4.5",
+      "supports_resolution_tiers": false,
+      "supports_reference_image": true,
+      "aspect_ratios": [
+        "1:1",
+        "4:3",
+        "3:4",
+        "16:9",
+        "9:16",
+        "3:2",
+        "2:3",
+        "21:9"
+      ],
+      "resolution_tiers": []
+    },
+    {
+      "id": "runware-seedream-4.0",
+      "name": "Seedream 4.0",
+      "provider": "runware",
+      "model_id": "bytedance:5@0",
+      "supports_resolution_tiers": false,
+      "supports_reference_image": true,
+      "aspect_ratios": [
+        "1:1",
+        "16:9",
+        "9:16",
+        "4:3",
+        "3:4"
+      ],
+      "resolution_tiers": []
+    }
+  ]
+}

@@ -70,13 +70,13 @@ async def list_models(_: str = Depends(validate_api_key)):
         "models": [
             {
                 "id": GoogleAIModel.GEMINI_2_5_FLASH.value,
-                "name": "Gemini 2.5 Flash Image",
+                "name": "Nano banana",
                 "supports_resolution_tiers": False,
                 "aspect_ratios": [ar.value for ar in AspectRatio]
             },
             {
                 "id": GoogleAIModel.GEMINI_3_PRO.value,
-                "name": "Gemini 3 Pro Image Preview",
+                "name": "Nano banana Pro",
                 "supports_resolution_tiers": True,
                 "aspect_ratios": [ar.value for ar in AspectRatio],
                 "resolution_tiers": [tier.value for tier in ResolutionTier]

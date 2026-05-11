@@ -55,7 +55,7 @@ export const en = {
   // Generation
   generation: {
     modeLocal: 'Local',
-    modeGoogle: 'Google',
+    modeCloud: 'Cloud',
     model: 'Model',
     aspectRatio: 'Aspect Ratio',
     resolution: 'Resolution',

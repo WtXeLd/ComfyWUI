@@ -1,20 +1,20 @@
 import React from 'react';
 import './GenerationModeSelector.css';
 
-type GenerationMode = 'local' | 'google';
+type GenerationMode = 'local' | 'cloud';
 
 interface GenerationModeSelectorProps {
   mode: GenerationMode;
   onChange: (mode: GenerationMode) => void;
   localLabel: string;
-  googleLabel: string;
+  cloudLabel: string;
 }
 
 export const GenerationModeSelector: React.FC<GenerationModeSelectorProps> = ({
   mode,
   onChange,
   localLabel,
-  googleLabel,
+  cloudLabel,
 }) => {
   return (
     <div className="mode-selector">
@@ -25,10 +25,10 @@ export const GenerationModeSelector: React.FC<GenerationModeSelectorProps> = ({
         {localLabel}
       </button>
       <button
-        className={`mode-button ${mode === 'google' ? 'active' : ''}`}
-        onClick={() => onChange('google')}
+        className={`mode-button ${mode === 'cloud' ? 'active' : ''}`}
+        onClick={() => onChange('cloud')}
       >
-        {googleLabel}
+        {cloudLabel}
       </button>
     </div>
   );

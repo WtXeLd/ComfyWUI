@@ -11,24 +11,35 @@ import { ImageGrid } from './components/generation/ImageGrid';
 import { workflowService } from './services/workflowService';
 import { imageService } from './services/imageService';
 import { authService } from './services/authService';
-import { googleAiService } from './services/googleAiService';
+import { cloudService } from './services/cloudService';
 import apiService from './services/api';
 import { useLocalStorageSync } from './hooks/useLocalStorageSync';
 import { useWebSocketManager } from './hooks/useWebSocketManager';
 import { useImageSelection } from './hooks/useImageSelection';
 import { useImageUpload } from './hooks/useImageUpload';
 import { useLocalGeneration } from './hooks/useLocalGeneration';
-import { useGoogleAIGeneration } from './hooks/useGoogleAIGeneration';
+import { useCloudGeneration } from './hooks/useCloudGeneration';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import type { Language } from './locales';
 import type { WorkflowConfig } from './types/workflow';
 import type { ImageMetadata } from './types/image';
-import type { GoogleAIModel } from './services/googleAiService';
+import type { CloudModel } from './services/cloudService';
 import iconImage from '/icon_small.png';
 import './App.css';
 
 type Tab = 'configuration' | 'generation';
-type GenerationMode = 'local' | 'google';
+type GenerationMode = 'local' | 'cloud';
+
+const RUNWARE_2K_SIZES: Record<string, { width: number; height: number }> = {
+  '1:1': { width: 2048, height: 2048 },
+  '4:3': { width: 2304, height: 1728 },
+  '3:4': { width: 1728, height: 2304 },
+  '16:9': { width: 2560, height: 1440 },
+  '9:16': { width: 1440, height: 2560 },
+  '3:2': { width: 2496, height: 1664 },
+  '2:3': { width: 1664, height: 2496 },
+  '21:9': { width: 3024, height: 1296 },
+};
 
 function AppContent() {
   // ==================== LANGUAGE ====================
@@ -62,11 +73,13 @@ function AppContent() {
   const [generationMode, setGenerationMode] = useLocalStorageSync<GenerationMode>('generationMode', 'local');
   const [nsfwMode, setNsfwMode] = useLocalStorageSync('nsfwMode', false);
 
-  // Google AI
-  const [googleModels, setGoogleModels] = useState<GoogleAIModel[]>([]);
-  const [selectedGoogleModel, setSelectedGoogleModel] = useLocalStorageSync('selectedGoogleModel', 'gemini-2.5-flash-image');
-  const [googleAspectRatio, setGoogleAspectRatio] = useLocalStorageSync('googleAspectRatio', '1:1');
-  const [googleResolutionTier, setGoogleResolutionTier] = useLocalStorageSync('googleResolutionTier', '1K');
+  // Cloud (Google AI, Runware, etc.)
+  const [cloudModels, setCloudModels] = useState<CloudModel[]>([]);
+  const [selectedCloudModel, setSelectedCloudModel] = useLocalStorageSync('selectedCloudModel', 'google-gemini-2.5-flash');
+  const [cloudAspectRatio, setCloudAspectRatio] = useLocalStorageSync('cloudAspectRatio', '1:1');
+  const [cloudResolutionTier, setCloudResolutionTier] = useLocalStorageSync('cloudResolutionTier', '1K');
+  const [cloudWidth, setCloudWidth] = useLocalStorageSync('cloudWidth', 1920);
+  const [cloudHeight, setCloudHeight] = useLocalStorageSync('cloudHeight', 1920);
 
   // UI State
   const [error, setError] = useState<string | null>(null);
@@ -237,9 +250,9 @@ function AppContent() {
     onError: setError,
   });
 
-  // Google AI Generation
-  const googleGeneration = useGoogleAIGeneration({
-    models: googleModels,
+  // Cloud Generation
+  const cloudGeneration = useCloudGeneration({
+    models: cloudModels,
     onGenerationStart: (generatingImage) => {
       setGeneratingImages(prev => [generatingImage, ...prev]);
     },
@@ -281,6 +294,9 @@ function AppContent() {
     onError: setError,
   });
 
+  const selectedCloudModelData = cloudModels.find(model => model.id === selectedCloudModel);
+  const isRunwareModel = selectedCloudModelData?.provider === 'runware';
+
   // ==================== EFFECTS ====================
   // Initial load
   useEffect(() => {
@@ -290,7 +306,7 @@ function AppContent() {
       loadWorkflows();
       loadImages();
       loadGeneratingImages();
-      loadGoogleModels();
+      loadCloudModels();
     } else {
       setShowApiKeyInput(true);
     }
@@ -328,6 +344,25 @@ function AppContent() {
       }
     }
   };
+
+  useEffect(() => {
+    if (!isRunwareModel) return;
+
+    const nextRatio = RUNWARE_2K_SIZES[cloudAspectRatio]
+      ? cloudAspectRatio
+      : selectedCloudModelData?.aspect_ratios.find(ratio => RUNWARE_2K_SIZES[ratio]) || '1:1';
+    const size = RUNWARE_2K_SIZES[nextRatio];
+
+    if (nextRatio !== cloudAspectRatio) {
+      setCloudAspectRatio(nextRatio);
+    }
+    if (cloudWidth !== size.width) {
+      setCloudWidth(size.width);
+    }
+    if (cloudHeight !== size.height) {
+      setCloudHeight(size.height);
+    }
+  }, [isRunwareModel, selectedCloudModelData, cloudAspectRatio, cloudWidth, cloudHeight, setCloudAspectRatio, setCloudWidth, setCloudHeight]);
 
   // Monitor prompt input height
   useEffect(() => {
@@ -464,12 +499,12 @@ function AppContent() {
     }
   };
 
-  const loadGoogleModels = async () => {
+  const loadCloudModels = async () => {
     try {
-      const response = await googleAiService.listModels();
-      setGoogleModels(response.models);
+      const response = await cloudService.listModels();
+      setCloudModels(response.models);
     } catch (err: any) {
-      console.error('Failed to load Google AI models:', err);
+      console.error('Failed to load cloud models:', err);
     }
   };
 
@@ -658,11 +693,18 @@ function AppContent() {
         wsManager.connect(promptId, selectedWorkflow, prompt, overrideParams);
       }
     } else {
-      await googleGeneration.generate({
+      const runwareSize = RUNWARE_2K_SIZES[cloudAspectRatio] || RUNWARE_2K_SIZES['1:1'];
+      const width = isRunwareModel ? runwareSize.width : cloudWidth;
+      const height = isRunwareModel ? runwareSize.height : cloudHeight;
+      const aspectRatio = isRunwareModel && !RUNWARE_2K_SIZES[cloudAspectRatio] ? '1:1' : cloudAspectRatio;
+
+      await cloudGeneration.generate({
         prompt,
-        model: selectedGoogleModel,
-        aspectRatio: googleAspectRatio,
-        resolutionTier: googleResolutionTier,
+        modelId: selectedCloudModel,
+        aspectRatio,
+        resolutionTier: cloudResolutionTier,
+        width,
+        height,
       });
     }
   };
@@ -853,20 +895,24 @@ function AppContent() {
                 if (file) localImageUpload.handleUpload(file);
               }}
               onImageRemove={localImageUpload.handleRemove}
-              googleModels={googleModels}
-              selectedGoogleModel={selectedGoogleModel}
-              onGoogleModelChange={setSelectedGoogleModel}
-              googleAspectRatio={googleAspectRatio}
-              onGoogleAspectRatioChange={setGoogleAspectRatio}
-              googleResolutionTier={googleResolutionTier}
-              onGoogleResolutionTierChange={setGoogleResolutionTier}
-              googleReferenceImage={googleGeneration.referenceImage}
-              googleReferencePreview={googleGeneration.referencePreview}
-              onGoogleReferenceUpload={(e) => {
+              cloudModels={cloudModels}
+              selectedCloudModel={selectedCloudModel}
+              onCloudModelChange={setSelectedCloudModel}
+              cloudAspectRatio={cloudAspectRatio}
+              onCloudAspectRatioChange={setCloudAspectRatio}
+              cloudResolutionTier={cloudResolutionTier}
+              onCloudResolutionTierChange={setCloudResolutionTier}
+              cloudWidth={cloudWidth}
+              onCloudWidthChange={setCloudWidth}
+              cloudHeight={cloudHeight}
+              onCloudHeightChange={setCloudHeight}
+              cloudReferenceImage={cloudGeneration.referenceImage}
+              cloudReferencePreview={cloudGeneration.referencePreview}
+              onCloudReferenceUpload={(e) => {
                 const file = e.target.files?.[0];
-                if (file) googleGeneration.handleReferenceUpload(file);
+                if (file) cloudGeneration.handleReferenceUpload(file);
               }}
-              onGoogleReferenceRemove={googleGeneration.handleReferenceRemove}
+              onCloudReferenceRemove={cloudGeneration.handleReferenceRemove}
               prompt={prompt}
               onPromptChange={setPrompt}
               promptInputHeight={promptInputHeight}

@@ -57,7 +57,7 @@ export const zh: TranslationKeys = {
   // Generation
   generation: {
     modeLocal: '本地',
-    modeGoogle: 'Google',
+    modeCloud: '云端',
     model: '模型',
     aspectRatio: '比例',
     resolution: '分辨率',
