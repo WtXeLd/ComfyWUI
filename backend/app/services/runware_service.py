@@ -3,6 +3,7 @@ Runware image generation service
 """
 import io
 import logging
+import uuid
 from datetime import datetime
 from typing import Optional
 from PIL import Image
@@ -53,9 +54,6 @@ class RunwareService:
         """
         self.storage = storage_service
         self.api_key = api_key
-        self.runware = None
-        if api_key:
-            self.runware = Runware(api_key=api_key)
 
     def _get_seedream_size(self, request: CloudGenerateRequest) -> tuple[int, int]:
         width = request.width
@@ -91,15 +89,16 @@ class RunwareService:
         Returns:
             CloudGenerateResponse
         """
-        if not self.runware:
+        if not self.api_key:
             return CloudGenerateResponse(
                 status="failed",
                 message="Runware API key not configured"
             )
 
+        runware = Runware(api_key=self.api_key)
+
         try:
-            # Connect to Runware
-            await self.runware.connect()
+            await runware.connect()
 
             width, height = self._get_seedream_size(request)
 
@@ -121,8 +120,7 @@ class RunwareService:
 
             logger.info(f"Generating image with Runware: model={provider_model_id}, size={width}x{height}")
 
-            # Generate image
-            images = await self.runware.imageInference(requestImage=inference_request)
+            images = await runware.imageInference(requestImage=inference_request)
 
             if not images or len(images) == 0:
                 return CloudGenerateResponse(
@@ -149,7 +147,8 @@ class RunwareService:
             actual_width, actual_height = image.size
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"runware_{timestamp}.png"
+            generation_id = f"runware_{timestamp}_{uuid.uuid4().hex[:8]}"
+            filename = f"{generation_id}.png"
 
             img_byte_arr = io.BytesIO()
             image.save(img_byte_arr, format="PNG")
@@ -168,7 +167,7 @@ class RunwareService:
                 workflow_name=f"Runware - {model_name}",
                 owner_id=owner_id,
                 prompt=request.prompt,
-                prompt_id=f"runware_{timestamp}",
+                prompt_id=generation_id,
                 file_path=file_path,
                 file_size=len(img_data),
                 width=actual_width,
@@ -207,9 +206,7 @@ class RunwareService:
                 message=f"Generation failed: {str(e)}"
             )
         finally:
-            # Disconnect from Runware
             try:
-                if self.runware:
-                    await self.runware.disconnect()
+                await runware.disconnect()
             except Exception as e:
                 logger.warning(f"Failed to disconnect from Runware: {str(e)}")
