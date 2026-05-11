@@ -39,6 +39,22 @@ SEEDREAM_4K_SIZES = {
     "21:9": (6048, 2592),
 }
 SEEDREAM_VALID_SIZES = set(SEEDREAM_2K_SIZES.values()) | set(SEEDREAM_4K_SIZES.values())
+OPENAI_MODEL_SIZES = {
+    "openai:1@1": {
+        "3:2": (1536, 1024),
+    },
+    "openai:gpt-image@2": {
+        "3:2": (1536, 1024),
+        "4:3": (1024, 768),
+    },
+    "openai:1@2": {
+        "1:1": (1024, 1024),
+        "2:3": (1024, 1536),
+        "3:2": (1536, 1024),
+    },
+}
+OPENAI_MODELS_WITH_BACKGROUND = {"openai:1@1", "openai:1@2"}
+OPENAI_MODELS_WITH_TOP_LEVEL_REFERENCES = {"openai:gpt-image@2"}
 
 
 class RunwareService:
@@ -55,20 +71,52 @@ class RunwareService:
         self.storage = storage_service
         self.api_key = api_key
 
-    def _get_seedream_size(self, request: CloudGenerateRequest) -> tuple[int, int]:
+    def _get_size(self, request: CloudGenerateRequest, provider_model_id: str) -> tuple[int, int]:
         width = request.width
         height = request.height
-        if width and height and (width, height) in SEEDREAM_VALID_SIZES:
-            return width, height
 
-        if width or height:
-            logger.warning(
-                "Unsupported Seedream size requested: %sx%s. Falling back to aspect ratio preset.",
-                width,
-                height,
-            )
+        if provider_model_id in OPENAI_MODEL_SIZES:
+            valid_sizes = set(OPENAI_MODEL_SIZES[provider_model_id].values())
+            if width and height and (width, height) in valid_sizes:
+                return width, height
 
-        return SEEDREAM_2K_SIZES.get(request.aspect_ratio.value, SEEDREAM_2K_SIZES["1:1"])
+            if width or height:
+                logger.warning(
+                    "Unsupported OpenAI image size requested for %s: %sx%s. Falling back to aspect ratio preset.",
+                    provider_model_id,
+                    width,
+                    height,
+                )
+
+            sizes = OPENAI_MODEL_SIZES[provider_model_id]
+            return sizes.get(request.aspect_ratio.value, next(iter(sizes.values())))
+
+        if provider_model_id.startswith("bytedance:seedream"):
+            if width and height and (width, height) in SEEDREAM_VALID_SIZES:
+                return width, height
+
+            if width or height:
+                logger.warning(
+                    "Unsupported Seedream size requested: %sx%s. Falling back to aspect ratio preset.",
+                    width,
+                    height,
+                )
+
+            return SEEDREAM_2K_SIZES.get(request.aspect_ratio.value, SEEDREAM_2K_SIZES["1:1"])
+
+        return width or 1024, height or 1024
+
+    def _get_provider_settings(self, provider_model_id: str) -> dict:
+        if provider_model_id in OPENAI_MODEL_SIZES:
+            params = {"quality": "high", "moderation": "auto"}
+            if provider_model_id in OPENAI_MODELS_WITH_BACKGROUND:
+                params["background"] = "opaque"
+            return {"openai": params}
+
+        if provider_model_id.startswith("bytedance:seedream"):
+            return IBytedanceProviderSettings(optimizePromptMode="standard").to_request_dict()
+
+        return {}
 
     async def generate_image(
         self,
@@ -100,7 +148,12 @@ class RunwareService:
         try:
             await runware.connect()
 
-            width, height = self._get_seedream_size(request)
+            width, height = self._get_size(request, provider_model_id)
+            provider_settings = self._get_provider_settings(provider_model_id)
+
+            extra_args = {}
+            if provider_settings:
+                extra_args["providerSettings"] = provider_settings
 
             inference_params = {
                 "positivePrompt": request.prompt,
@@ -110,11 +163,14 @@ class RunwareService:
                 "numberResults": 1,
                 "outputType": "base64Data",
                 "outputFormat": "PNG",
-                "providerSettings": IBytedanceProviderSettings(optimizePromptMode="standard"),
+                "extraArgs": extra_args,
             }
 
             if request.reference_image:
-                inference_params["inputs"] = IInputs(referenceImages=[request.reference_image])
+                if provider_model_id in OPENAI_MODELS_WITH_TOP_LEVEL_REFERENCES:
+                    inference_params["referenceImages"] = [request.reference_image]
+                else:
+                    inference_params["inputs"] = IInputs(referenceImages=[request.reference_image])
 
             inference_request = IImageInference(**inference_params)
 

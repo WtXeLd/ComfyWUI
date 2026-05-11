@@ -30,15 +30,29 @@ import './App.css';
 type Tab = 'configuration' | 'generation';
 type GenerationMode = 'local' | 'cloud';
 
-const RUNWARE_2K_SIZES: Record<string, { width: number; height: number }> = {
-  '1:1': { width: 2048, height: 2048 },
-  '4:3': { width: 2304, height: 1728 },
-  '3:4': { width: 1728, height: 2304 },
-  '16:9': { width: 2560, height: 1440 },
-  '9:16': { width: 1440, height: 2560 },
-  '3:2': { width: 2496, height: 1664 },
-  '2:3': { width: 1664, height: 2496 },
-  '21:9': { width: 3024, height: 1296 },
+const RUNWARE_MODEL_SIZES: Record<string, Record<string, { width: number; height: number }>> = {
+  'bytedance:seedream@4.5': {
+    '1:1': { width: 2048, height: 2048 },
+    '4:3': { width: 2304, height: 1728 },
+    '3:4': { width: 1728, height: 2304 },
+    '16:9': { width: 2560, height: 1440 },
+    '9:16': { width: 1440, height: 2560 },
+    '3:2': { width: 2496, height: 1664 },
+    '2:3': { width: 1664, height: 2496 },
+    '21:9': { width: 3024, height: 1296 },
+  },
+  'openai:1@1': {
+    '3:2': { width: 1536, height: 1024 },
+  },
+  'openai:gpt-image@2': {
+    '3:2': { width: 1536, height: 1024 },
+    '4:3': { width: 1024, height: 768 },
+  },
+  'openai:1@2': {
+    '1:1': { width: 1024, height: 1024 },
+    '2:3': { width: 1024, height: 1536 },
+    '3:2': { width: 1536, height: 1024 },
+  },
 };
 
 function AppContent() {
@@ -296,6 +310,7 @@ function AppContent() {
 
   const selectedCloudModelData = cloudModels.find(model => model.id === selectedCloudModel);
   const isRunwareModel = selectedCloudModelData?.provider === 'runware';
+  const runwareSizes = selectedCloudModelData ? RUNWARE_MODEL_SIZES[selectedCloudModelData.model_id] : undefined;
 
   // ==================== EFFECTS ====================
   // Initial load
@@ -346,12 +361,12 @@ function AppContent() {
   };
 
   useEffect(() => {
-    if (!isRunwareModel) return;
+    if (!isRunwareModel || !runwareSizes) return;
 
-    const nextRatio = RUNWARE_2K_SIZES[cloudAspectRatio]
+    const nextRatio = runwareSizes[cloudAspectRatio]
       ? cloudAspectRatio
-      : selectedCloudModelData?.aspect_ratios.find(ratio => RUNWARE_2K_SIZES[ratio]) || '1:1';
-    const size = RUNWARE_2K_SIZES[nextRatio];
+      : selectedCloudModelData?.aspect_ratios.find(ratio => runwareSizes[ratio]) || Object.keys(runwareSizes)[0];
+    const size = runwareSizes[nextRatio];
 
     if (nextRatio !== cloudAspectRatio) {
       setCloudAspectRatio(nextRatio);
@@ -362,7 +377,7 @@ function AppContent() {
     if (cloudHeight !== size.height) {
       setCloudHeight(size.height);
     }
-  }, [isRunwareModel, selectedCloudModelData, cloudAspectRatio, cloudWidth, cloudHeight, setCloudAspectRatio, setCloudWidth, setCloudHeight]);
+  }, [isRunwareModel, runwareSizes, selectedCloudModelData, cloudAspectRatio, cloudWidth, cloudHeight, setCloudAspectRatio, setCloudWidth, setCloudHeight]);
 
   // Monitor prompt input height
   useEffect(() => {
@@ -693,10 +708,11 @@ function AppContent() {
         wsManager.connect(promptId, selectedWorkflow, prompt, overrideParams);
       }
     } else {
-      const runwareSize = RUNWARE_2K_SIZES[cloudAspectRatio] || RUNWARE_2K_SIZES['1:1'];
-      const width = isRunwareModel ? runwareSize.width : cloudWidth;
-      const height = isRunwareModel ? runwareSize.height : cloudHeight;
-      const aspectRatio = isRunwareModel && !RUNWARE_2K_SIZES[cloudAspectRatio] ? '1:1' : cloudAspectRatio;
+      const fallbackRatio = runwareSizes ? Object.keys(runwareSizes)[0] : cloudAspectRatio;
+      const aspectRatio = isRunwareModel && runwareSizes && !runwareSizes[cloudAspectRatio] ? fallbackRatio : cloudAspectRatio;
+      const runwareSize = runwareSizes?.[aspectRatio];
+      const width = isRunwareModel && runwareSize ? runwareSize.width : cloudWidth;
+      const height = isRunwareModel && runwareSize ? runwareSize.height : cloudHeight;
 
       await cloudGeneration.generate({
         prompt,

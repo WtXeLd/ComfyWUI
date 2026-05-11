@@ -27,7 +27,6 @@
 
 .btn-primary {
   background: var(--color-bg-tertiary);
-  border-color: var(--color-accent);
 }
 
 .btn-danger {

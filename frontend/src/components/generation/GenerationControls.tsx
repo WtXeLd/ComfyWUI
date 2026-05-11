@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../common/Button';
+import { CustomSelect } from '../common/CustomSelect';
 import { GenerationModeSelector } from './GenerationModeSelector';
 import { AdvancedSettings } from './AdvancedSettings';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -9,15 +10,29 @@ import './GenerationControls.css';
 
 type GenerationMode = 'local' | 'cloud';
 
-const RUNWARE_2K_SIZES: Record<string, { width: number; height: number }> = {
-  '1:1': { width: 2048, height: 2048 },
-  '4:3': { width: 2304, height: 1728 },
-  '3:4': { width: 1728, height: 2304 },
-  '16:9': { width: 2560, height: 1440 },
-  '9:16': { width: 1440, height: 2560 },
-  '3:2': { width: 2496, height: 1664 },
-  '2:3': { width: 1664, height: 2496 },
-  '21:9': { width: 3024, height: 1296 },
+const RUNWARE_MODEL_SIZES: Record<string, Record<string, { width: number; height: number }>> = {
+  'bytedance:seedream@4.5': {
+    '1:1': { width: 2048, height: 2048 },
+    '4:3': { width: 2304, height: 1728 },
+    '3:4': { width: 1728, height: 2304 },
+    '16:9': { width: 2560, height: 1440 },
+    '9:16': { width: 1440, height: 2560 },
+    '3:2': { width: 2496, height: 1664 },
+    '2:3': { width: 1664, height: 2496 },
+    '21:9': { width: 3024, height: 1296 },
+  },
+  'openai:1@1': {
+    '3:2': { width: 1536, height: 1024 },
+  },
+  'openai:gpt-image@2': {
+    '3:2': { width: 1536, height: 1024 },
+    '4:3': { width: 1024, height: 768 },
+  },
+  'openai:1@2': {
+    '1:1': { width: 1024, height: 1024 },
+    '2:3': { width: 1024, height: 1536 },
+    '3:2': { width: 1536, height: 1024 },
+  },
 };
 
 interface GenerationControlsProps {
@@ -69,7 +84,8 @@ export const GenerationControls: React.FC<GenerationControlsProps> = (props) => 
 
   // Check if selected model is Runware
   const isRunwareModel = selectedCloudModelData?.provider === 'runware';
-  const runwareAspectRatios = selectedCloudModelData?.aspect_ratios?.filter(ratio => RUNWARE_2K_SIZES[ratio]) || [];
+  const runwareSizes = selectedCloudModelData ? RUNWARE_MODEL_SIZES[selectedCloudModelData.model_id] : undefined;
+  const runwareAspectRatios = selectedCloudModelData?.aspect_ratios?.filter(ratio => runwareSizes?.[ratio]) || [];
 
   return (
     <div className="generation-controls">
@@ -86,22 +102,16 @@ export const GenerationControls: React.FC<GenerationControlsProps> = (props) => 
         {props.generationMode === 'local' && (
           <div className="control-group">
             <label>{t.generation.workflow}</label>
-            <select
+            <CustomSelect
               value={props.selectedWorkflow || ''}
-              onChange={(e) => props.onWorkflowChange(e.target.value)}
-              className="workflow-select"
+              onChange={props.onWorkflowChange}
               disabled={props.workflows.length === 0}
-            >
-              {props.workflows.length === 0 ? (
-                <option value="">{t.generation.noWorkflowsAvailable}</option>
-              ) : (
-                props.workflows.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))
-              )}
-            </select>
+              placeholder={t.generation.noWorkflowsAvailable}
+              options={props.workflows.map((w) => ({
+                value: w.id,
+                label: w.name,
+              }))}
+            />
           </div>
         )}
 
@@ -109,17 +119,14 @@ export const GenerationControls: React.FC<GenerationControlsProps> = (props) => 
         {props.generationMode === 'cloud' && (
           <div className="control-group">
             <label>{t.generation.model}</label>
-            <select
+            <CustomSelect
               value={props.selectedCloudModel}
-              onChange={(e) => props.onCloudModelChange(e.target.value)}
-              className="workflow-select"
-            >
-              {props.cloudModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </select>
+              onChange={props.onCloudModelChange}
+              options={props.cloudModels.map((model) => ({
+                value: model.id,
+                label: model.name,
+              }))}
+            />
           </div>
         )}
 
@@ -188,17 +195,14 @@ export const GenerationControls: React.FC<GenerationControlsProps> = (props) => 
         {props.generationMode === 'cloud' && !isRunwareModel && selectedCloudModelData?.aspect_ratios && selectedCloudModelData.aspect_ratios.length > 0 && (
           <div className="control-group">
             <label>{t.generation.aspectRatio}</label>
-            <select
+            <CustomSelect
               value={props.cloudAspectRatio}
-              onChange={(e) => props.onCloudAspectRatioChange(e.target.value)}
-              className="workflow-select"
-            >
-              {selectedCloudModelData.aspect_ratios.map((ratio) => (
-                <option key={ratio} value={ratio}>
-                  {ratio}
-                </option>
-              ))}
-            </select>
+              onChange={props.onCloudAspectRatioChange}
+              options={selectedCloudModelData.aspect_ratios.map((ratio) => ({
+                value: ratio,
+                label: ratio,
+              }))}
+            />
           </div>
         )}
 
@@ -206,17 +210,14 @@ export const GenerationControls: React.FC<GenerationControlsProps> = (props) => 
         {props.generationMode === 'cloud' && selectedCloudModelData?.supports_resolution_tiers && selectedCloudModelData.resolution_tiers && (
           <div className="control-group">
             <label>{t.generation.resolution}</label>
-            <select
+            <CustomSelect
               value={props.cloudResolutionTier}
-              onChange={(e) => props.onCloudResolutionTierChange(e.target.value)}
-              className="workflow-select"
-            >
-              {selectedCloudModelData.resolution_tiers.map((tier) => (
-                <option key={tier} value={tier}>
-                  {tier}
-                </option>
-              ))}
-            </select>
+              onChange={props.onCloudResolutionTierChange}
+              options={selectedCloudModelData.resolution_tiers.map((tier) => ({
+                value: tier,
+                label: tier,
+              }))}
+            />
           </div>
         )}
 
@@ -224,25 +225,24 @@ export const GenerationControls: React.FC<GenerationControlsProps> = (props) => 
         {props.generationMode === 'cloud' && isRunwareModel && runwareAspectRatios.length > 0 && (
           <div className="control-group">
             <label>{t.generation.aspectRatio}</label>
-            <select
-              value={RUNWARE_2K_SIZES[props.cloudAspectRatio] ? props.cloudAspectRatio : runwareAspectRatios[0]}
-              onChange={(e) => {
-                const size = RUNWARE_2K_SIZES[e.target.value];
-                props.onCloudAspectRatioChange(e.target.value);
-                props.onCloudWidthChange(size.width);
-                props.onCloudHeightChange(size.height);
+            <CustomSelect
+              value={runwareSizes?.[props.cloudAspectRatio] ? props.cloudAspectRatio : runwareAspectRatios[0]}
+              onChange={(ratio) => {
+                const size = runwareSizes?.[ratio];
+                props.onCloudAspectRatioChange(ratio);
+                if (size) {
+                  props.onCloudWidthChange(size.width);
+                  props.onCloudHeightChange(size.height);
+                }
               }}
-              className="workflow-select"
-            >
-              {runwareAspectRatios.map((ratio) => {
-                const size = RUNWARE_2K_SIZES[ratio];
-                return (
-                  <option key={ratio} value={ratio}>
-                    {ratio} - {size.width}×{size.height}
-                  </option>
-                );
+              options={runwareAspectRatios.map((ratio) => {
+                const size = runwareSizes?.[ratio];
+                return {
+                  value: ratio,
+                  label: size ? `${ratio} - ${size.width}×${size.height}` : ratio,
+                };
               })}
-            </select>
+            />
           </div>
         )}
 

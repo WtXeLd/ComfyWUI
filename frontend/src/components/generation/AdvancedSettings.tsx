@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../common/Button';
+import { CustomSelect } from '../common/CustomSelect';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { WorkflowConfig, ConfigurableParameter } from '../../types/workflow';
 import './AdvancedSettings.css';
@@ -84,17 +85,15 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
 
     if (param.param_type === 'dropdown' && param.options) {
       return (
-        <select
-          value={value || param.default}
-          onChange={(e) => updateOverride(paramKey, e.target.value)}
-          className="setting-select"
-        >
-          {param.options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+        <CustomSelect
+          value={String(value || param.default)}
+          onChange={(nextValue) => updateOverride(paramKey, nextValue)}
+          size="sm"
+          options={param.options.map((opt) => ({
+            value: String(opt),
+            label: String(opt),
+          }))}
+        />
       );
     }
 

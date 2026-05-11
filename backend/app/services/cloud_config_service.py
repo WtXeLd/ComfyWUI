@@ -66,6 +66,33 @@ class CloudConfigService:
             ),
             # Runware Models
             CloudModelConfig(
+                id="runware-gpt-image-1",
+                name="GPT Image 1",
+                provider=CloudProvider.RUNWARE,
+                model_id="openai:1@1",
+                supports_resolution_tiers=False,
+                supports_reference_image=True,
+                aspect_ratios=["3:2"]
+            ),
+            CloudModelConfig(
+                id="runware-gpt-image-2",
+                name="GPT Image 2",
+                provider=CloudProvider.RUNWARE,
+                model_id="openai:gpt-image@2",
+                supports_resolution_tiers=False,
+                supports_reference_image=True,
+                aspect_ratios=["3:2", "4:3"]
+            ),
+            CloudModelConfig(
+                id="runware-gpt-image-1-mini",
+                name="GPT Image 1 Mini",
+                provider=CloudProvider.RUNWARE,
+                model_id="openai:1@2",
+                supports_resolution_tiers=False,
+                supports_reference_image=True,
+                aspect_ratios=["1:1", "2:3", "3:2"]
+            ),
+            CloudModelConfig(
                 id="runware-seedream-4.5",
                 name="Seedream 4.5",
                 provider=CloudProvider.RUNWARE,

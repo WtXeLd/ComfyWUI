@@ -57,8 +57,7 @@
 }
 
 .form-input,
-.form-textarea,
-.form-select {
+.form-textarea {
   width: 100%;
   padding: var(--spacing-sm);
   background-color: var(--color-bg-secondary);
@@ -69,15 +68,8 @@
   font-size: var(--font-size-md);
 }
 
-.form-select {
-  /* Custom arrow inherited from global select style */
-  background-position: right var(--spacing-sm) center;
-  padding-right: calc(var(--spacing-sm) * 3);
-}
-
 .form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
+.form-textarea:focus {
   outline: none;
   border-color: var(--color-accent);
 }
@@ -163,8 +155,7 @@
   word-break: break-word;
 }
 
-.param-input,
-.param-select {
+.param-input {
   padding: var(--spacing-xs) var(--spacing-sm);
   background-color: var(--color-bg-secondary);
   border: var(--border-width) solid var(--color-border);
@@ -174,14 +165,7 @@
   font-size: var(--font-size-sm);
 }
 
-.param-select {
-  /* Custom arrow inherited from global select style */
-  background-position: right var(--spacing-xs) center;
-  padding-right: calc(var(--spacing-sm) * 2.5);
-}
-
-.param-input:focus,
-.param-select:focus {
+.param-input:focus {
   outline: none;
   border-color: var(--color-accent);
 }

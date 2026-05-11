@@ -24,7 +24,7 @@
   --spacing-xxl: 48px;
 
   /* Typography */
-  --font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-family: 'JetBrains Mono', 'Fira Code', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', 'Courier New', monospace;
   --font-size-xs: 10px;
   --font-size-sm: 12px;
   --font-size-md: 14px;

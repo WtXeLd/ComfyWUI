@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../common/Button';
+import { CustomSelect } from '../common/CustomSelect';
 import type { WorkflowConfig } from '../../types/workflow';
 import './WorkflowEditor.css';
 
@@ -119,17 +120,15 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
 
     if (Array.isArray(value)) {
       return (
-        <select
-          value={value[0]}
-          onChange={(e) => updateNodeParameter(nodeId, key, [e.target.value])}
-          className="param-select"
-        >
-          {value.map((opt: any) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+        <CustomSelect
+          value={String(value[0])}
+          onChange={(nextValue) => updateNodeParameter(nodeId, key, [nextValue])}
+          size="sm"
+          options={value.map((opt: any) => ({
+            value: String(opt),
+            label: String(opt),
+          }))}
+        />
       );
     }
 
@@ -194,20 +193,16 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
           <label>
             {t.promptNode} <span className="badge">{t.autoDetected}</span>
           </label>
-          <select
+          <CustomSelect
             value={editedWorkflow.prompt_node_id}
-            onChange={(e) =>
-              setEditedWorkflow({ ...editedWorkflow, prompt_node_id: e.target.value })
+            onChange={(nodeId) =>
+              setEditedWorkflow({ ...editedWorkflow, prompt_node_id: nodeId })
             }
-            className="form-select"
-          >
-            {availablePromptNodes.map((nodeId) => (
-              <option key={nodeId} value={nodeId}>
-                {t.node} {nodeId} -{' '}
-                {editedWorkflow.workflow_json[nodeId]._meta?.title || 'CLIPTextEncode'}
-              </option>
-            ))}
-          </select>
+            options={availablePromptNodes.map((nodeId) => ({
+              value: nodeId,
+              label: `${t.node} ${nodeId} - ${editedWorkflow.workflow_json[nodeId]._meta?.title || 'CLIPTextEncode'}`,
+            }))}
+          />
           <p className="form-hint">{t.manualSelect}</p>
         </div>
 
@@ -216,21 +211,19 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
             {t.imageNode} <span className="badge">{availableImageNodes.length > 0 ? t.autoDetected : t.optional}</span>
           </label>
           {availableImageNodes.length > 0 ? (
-            <select
+            <CustomSelect
               value={editedWorkflow.image_node_id || ''}
-              onChange={(e) =>
-                setEditedWorkflow({ ...editedWorkflow, image_node_id: e.target.value || undefined })
+              onChange={(nodeId) =>
+                setEditedWorkflow({ ...editedWorkflow, image_node_id: nodeId || undefined })
               }
-              className="form-select"
-            >
-              <option value="">{t.none}</option>
-              {availableImageNodes.map((nodeId) => (
-                <option key={nodeId} value={nodeId}>
-                  {t.node} {nodeId} -{' '}
-                  {editedWorkflow.workflow_json[nodeId]._meta?.title || 'LoadImage'}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: t.none },
+                ...availableImageNodes.map((nodeId) => ({
+                  value: nodeId,
+                  label: `${t.node} ${nodeId} - ${editedWorkflow.workflow_json[nodeId]._meta?.title || 'LoadImage'}`,
+                })),
+              ]}
+            />
           ) : (
             <p className="form-text">{t.none}</p>
           )}
